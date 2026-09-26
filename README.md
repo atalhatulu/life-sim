@@ -23,3 +23,7 @@ Next: multiple daily time slots, social graph, persistent goals and event-driven
 ## Genealogy-first direction
 
 The new `src/genealogy.js` creates founder couples, their adult children and a third generation of grandchildren. It maintains reciprocal parent/child links, partners, birth years and household membership. `observerPersonId: null` means no player is required. The earlier daily activity prototype remains available but is not the current development focus.
+
+## Connected lineages
+
+Run `npm run lineage -- uyuk-1600 8` to inspect multiple families linked by marriages, their children and deceased founders. Dead people remain in genealogy but not living households. `npm test` includes a 1,000-seed chronological integrity stress test. The original daily activity engine is retained but not the current focus.
