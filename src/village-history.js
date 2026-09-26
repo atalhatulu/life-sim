@@ -88,6 +88,7 @@ export function createVillageHistory(seed="uyuk-1600",familyCount=4,year=1600){
    if(donor.food>=8&&receiver.food<=donor.food){
     const amount=Math.min(3,donor.food-5);
     donor.food-=amount;receiver.food+=amount;
+    donor.yearly.at(-1).food=donor.food;receiver.yearly.at(-1).food=receiver.food;
     const a=rng.pick(homes.get(donorId)),b=rng.pick(homes.get(receiverId));
     link(a.id,b,4,"komşu haneye erzak yardımı",y);
     const event={year:y,type:"neighbour_aid",personIds:[a.id,b.id],
