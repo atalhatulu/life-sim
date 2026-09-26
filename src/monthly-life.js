@@ -17,15 +17,15 @@ const unrelated=(a,b,byId)=>{
 export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,endYear=1600}={}){
  if(!Number.isInteger(founderFamilies)||founderFamilies<1||founderFamilies>24)throw new Error("founderFamilies must be 1..24");
  if(!Number.isInteger(startYear)||!Number.isInteger(endYear)||endYear<=startYear)throw new Error("invalid years");
- const rng=new RNG(String(seed)+":monthly-life:v3");
- const world={seed:String(seed),version:"monthly-life:v3",year:startYear,month:1,monthCount:0,
+ const rng=new RNG(String(seed)+":monthly-life:v4");
+ const world={seed:String(seed),version:"monthly-life:v4",year:startYear,month:1,monthCount:0,
   people:[],households:[],events:[],initialConditions:[],generationLimit:3};
  const byId=new Map();let personId=1,houseId=1;
  const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85),workPressure:rng.int(15,75)};world.households.push(h);return h;};
  const person=(sex,bornAt,surname,home,generation,parents=[],initial=false)=>{
   const p={id:personId++,name:pickName(rng,sex),surname,sex,bornAt,birthYear:Math.floor(bornAt/12),
    birthMonth:bornAt%12+1,generation,parentIds:parents.map(x=>x.id),childIds:[],
-   householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,
+   householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,pregnancy:null,lastBirthAt:null,
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
    skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,educationDecision:null,accidents:0,
    state:{energy:80,health:90},experienceMonths:initial?0:1,history:[]};
@@ -68,6 +68,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   const partner=p.partnerId?byId.get(p.partnerId):null;
   const affected=new Set([p.id,...p.childIds,...h.members]);
   if(partner)affected.add(partner.id);
+  if(p.pregnancy){record("pregnancy_loss",at,[p.id,p.pregnancy.fatherId],h.id,{conceivedAt:p.pregnancy.conceivedAt,reason:"maternal_death"});p.pregnancy=null;}
   p.alive=false;p.deathAt=at;p.deathCause=cause;
   if(partner){
    partner.previousPartnerIds.push(p.id);
@@ -86,7 +87,12 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   const annualRisk=Math.min(0.95,annual*healthFactor);
   return 1-Math.pow(1-annualRisk,1/12);
  };
- const birthCooldown=new Map();
+ const conceptionChance=(mother,at)=>{
+  const age=ageMonths(mother,at)/12;
+  const ageFactor=age<20?0.75:age<30?1:age<35?0.72:0.38;
+  const h=world.households.find(x=>x.id===mother.householdId);
+  return 0.075*ageFactor*Math.max(0.2,mother.state.health/100)*(1-h.workPressure/400);
+ };
  for(let at=start;at<=end;at++){
   const year=Math.floor(at/12),month=at%12+1;
   world.year=year;world.month=month;world.monthCount++;
