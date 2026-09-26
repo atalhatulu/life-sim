@@ -4,7 +4,7 @@ export const VILLAGE_START = "1500-01-01T00:00:00.000Z";
 export const LIVE_START = "1600-01-01T00:00:00.000Z";
 
 const parseTime = value => {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) {
     throw new Error("Expected an ISO UTC timestamp");
   }
   const date = new Date(value);
