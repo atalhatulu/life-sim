@@ -55,6 +55,8 @@ export function generateGenealogy(seed = "uyuk-1600", familyCount = 4, year = 16
     }
     const marriageYear=year-Math.min(father.age,mother.age)+rng.int(18,22);
     partner(father,mother,marriageYear);
+    father.history.push({year:marriageYear,type:"household_move",householdId:home.id});
+    mother.history.push({year:marriageYear,type:"household_move",householdId:home.id});
     const grandchildren=[];
     const oldest=Math.min(18,father.age-17,mother.age-17,year-marriageYear);
     for(let j=0,n=rng.int(1,4);j<n;j++) {
