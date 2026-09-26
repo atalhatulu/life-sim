@@ -15,3 +15,9 @@ jobs:
       - run: npm run book -- uyuk-1600 1
       - run: npm run notebook -- uyuk-1600 1
       - run: npm run village -- uyuk-1600 1
+      - run: npm run uyuk -- init artifacts/canonical/uyuk-1600.world.json
+      - run: npm run uyuk -- verify artifacts/canonical/uyuk-1600.world.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-uyuk-1600
+          path: artifacts/canonical/uyuk-1600.world.json
