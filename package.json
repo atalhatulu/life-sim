@@ -17,6 +17,7 @@
     "generations": "node src/generations-cli.js",
     "monthly": "node src/monthly-cli.js",
     "lineage:monthly": "node src/lineage-monthly-cli.js",
-    "village:1600": "node src/village-1600-cli.js"
+    "village:1600": "node src/village-1600-cli.js",
+    "audit:characters": "node src/character-depth-audit-cli.js"
   }
 }
