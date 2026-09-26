@@ -68,7 +68,7 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
   for(const person of world.people.filter(p => p.generation === 1)) {
     if(!rng.chance(0.25)) continue;
     const latestChildBirth = Math.max(person.birthYear,...person.childIds.map(id=>byId.get(id).birthYear));
-    const earliestDeath = Math.max(latestChildBirth+1,person.birthYear+48);
+    const earliestDeath = Math.max(latestChildBirth+1,person.birthYear+48,...person.history.map(event=>event.year));
     if(earliestDeath>year) continue;
     const deathYear = rng.int(earliestDeath,year);
     person.alive=false;person.deathYear=deathYear;person.age=deathYear-person.birthYear;
