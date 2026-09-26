@@ -224,6 +224,10 @@ export function validateMonthlyVillage(world){
   if((p.alive&&p.deathAt!==null)||(!p.alive&&p.deathAt===null))errors.push("death state "+p.id);
   if(p.generation===3&&p.childIds.length)errors.push("fourth generation "+p.id);
   if(p.pregnancy&&(!p.alive||p.sex!=="F"||p.generation>=3||p.pregnancy.dueAt!==p.pregnancy.conceivedAt+9))errors.push("pregnancy state "+p.id);
+  if(p.alive&&p.generation>1&&ageMonths(p,monthIndex(world.year,world.month))<16*12){
+   const guardian=byId.get(p.guardianId);
+   if(guardian&&(!guardian.alive||guardian.householdId!==p.householdId||guardian.id===p.id))errors.push("guardian "+p.id);
+  }
  }
  for(const e of world.events){
   if(e.at>monthIndex(world.year,world.month))errors.push("future event");
