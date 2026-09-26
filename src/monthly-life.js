@@ -159,7 +159,7 @@ export function validateMonthlyVillage(world){
  if(byId.size!==world.people.length)errors.push("duplicate person id");
  for(const h of world.households)for(const id of h.members)members.set(id,(members.get(id)??0)+1);
  for(const p of world.people){
-  if(members.get(p.id)!==(p.alive?1:0))errors.push("household membership "+p.id);
+  if((members.get(p.id)??0)!==(p.alive?1:0))errors.push("household membership "+p.id);
   if(p.alive&&!world.households.some(h=>h.id===p.householdId&&h.members.includes(p.id)))errors.push("household pointer "+p.id);
   if(p.generation<1||p.generation>3)errors.push("generation "+p.id);
   if(p.experienceMonths<1)errors.push("missing lived months "+p.id);
