@@ -20,7 +20,11 @@ const sentence=(entry,person,subject,rng)=>{
   child_death:[name+" hayatını kaybetti. Çocuğunu kaybetti.",name+" öldü; aile çocuğunun yasını tutuyor."],
   widowed:[name+" hayatını kaybetti; evliliği ölümle sona erdi.",name+" öldü. Eşini kaybetti."],
   death:[person.name+" hayatını kaybetti.",person.name+"'in hayatı sona erdi."],
-  household_move:["Başka bir haneye taşındı.","Yaşadığı hane değişti."]
+  household_move:["Başka bir haneye taşındı.","Yaşadığı hane değişti."],
+  apprenticeship:[entry.job+" işini öğrenmeye başladı.",entry.job+" mesleğine ilk adımını attı."],
+  food_shortage:["Hanede erzak azaldı; geçim zorlaştı.","Bu yıl evde yiyecek sıkıntısı yaşandı."],
+  household_cooperation:[name+" ile aynı hanenin işlerini paylaştı.",name+" ile ev işlerinde birbirine destek oldu."],
+  neighbour_aid:[name+" ile haneler arasında erzak yardımı yapıldı.",name+" ile komşu haneler birbirine yardım etti."]
  };
  return rng.pick(variations[entry.type]??[entry.label+(subject&&subject.id!==person.id?" — "+full(subject):"")+"."]);
 };
