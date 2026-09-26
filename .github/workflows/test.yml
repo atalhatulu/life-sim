@@ -22,3 +22,4 @@ jobs:
           name: canonical-uyuk-1600
           path: artifacts/canonical/uyuk-1600.world.json
       - run: npm run census -- seed uyuk-1600
+      - run: npm run generations -- 1
