@@ -1,100 +1,81 @@
-import { RNG } from "./engine.js";
+import {buildLifeBooks} from "./life-book.js";
+import {RNG} from "./engine.js";
 
-// A private notebook is not the omniscient life book. It is a selective, fallible
-// account: entries only start once the character can plausibly express memories.
-const TEMPLATES={
- marriage:[
-  "Bugün {person} ile aynı evi paylaşmaya başladık. Yeni bir hayatın eşiğindeyim.",
-  "{person} ile evlendik. Ev kalabalıklaştı, aklımda söylenecek çok söz var.",
-  "Düğün bitti. {person} ile bundan sonra nasıl bir hayat kuracağımızı merak ediyorum."
- ],
- child_birth:[
-  "{person} dünyaya geldi. Küçücük ellerine uzun uzun baktım.",
-  "Bugün {person} doğdu. Evdeki sesler bile değişti.",
-  "{person} doğdu. Sevincimin yanında geçim derdi de aklımda."
- ],
- sibling_birth:[
-  "Eve yeni bir bebek geldi: {person}. Herkes onun çevresinde.",
-  "{person} doğdu. Artık evde bir kişi daha var.",
-  "Kardeşim {person} dünyaya geldi. Onu henüz pek tanımıyorum."
- ],
- parent_death:[
-  "{person} artık yok. Evde bıraktığı boşluk her köşede.",
-  "{person} öldü. Söyleyemediğim sözler aklımda kaldı.",
-  "Bugün {person}'i kaybettik. Ev eskisi gibi olmayacak."
- ],
- grandparent_death:[
-  "{person}'i kaybettik. Anlattığı hikâyeleri unutmamaya çalışacağım.",
-  "{person} öldü. Çocukluğumdan bir ses eksildi.",
-  "{person} artık aramızda değil. Onunla ilgili hatırladıklarımı yazdım."
- ],
- widowed:[
-  "{person} olmadan eve dönmek tuhaf. Her şey yerli yerinde, bir tek o yok.",
-  "{person}'i kaybettim. Bugün pek yazmak istemiyorum.",
-  "{person} öldü. Defterin bu sayfasını bitirmek güç."
- ]
+// One event source, two readings: the life book is the canonical chronology;
+// this notebook renders every relevant event for every person, including infants.
+// "record" pages are not falsely attributed to the character's own memory.
+const STAGES=[["bebeklik",0,2],["çocukluk",3,12],["gençlik",13,17],["yetişkinlik",18,59],["yaşlılık",60,Infinity]];
+export function lifeStage(age){return STAGES.find(([,min,max])=>age>=min&&age<=max)[0];}
+const full=p=>p?p.name+" "+p.surname:"?";
+const sentence=(entry,person,subject,rng)=>{
+ const name=subject?.name??"bir yakını";
+ const variations={
+  birth:[person.name+" dünyaya geldi.",person.name+" aileye katıldı."],
+  marriage:[name+" ile evlendi.",name+" ile yeni bir hane kurdu."],
+  child_birth:[name+" dünyaya geldi; aileye yeni bir çocuk katıldı.",name+" doğdu. Hane bir kişi büyüdü."],
+  sibling_birth:[name+" doğdu; artık bir kardeşi daha var.",name+" aileye katıldı. Kardeş sayısı arttı."],
+  parent_death:[name+" hayatını kaybetti; ailesindeki yeri boş kaldı.",name+" öldü. Aile bir ebeveynini kaybetti."],
+  grandparent_death:[name+" hayatını kaybetti; ailenin eski kuşağından biri eksildi.",name+" öldü. Ailenin geçmişinden bir kişi daha ayrıldı."],
+  widowed:[name+" hayatını kaybetti; evliliği ölümle sona erdi.",name+" öldü. Eşini kaybetti."],
+  death:[person.name+" hayatını kaybetti.",person.name+"'in hayatı sona erdi."],
+  household_move:["Başka bir haneye taşındı.","Yaşadığı hane değişti."]
+ };
+ return rng.pick(variations[entry.type]??[entry.label+(subject&&subject.id!==person.id?" — "+full(subject):"")+"."]);
 };
-const SKETCHES={
- marriage:["iki yan yana fincan","yeni evin kapısı"],
- child_birth:["küçük bir el izi","beşik ve örtü"],
- sibling_birth:["beşik","yan yana iki küçük figür"],
- parent_death:["boş sandalye","evin önündeki ağaç"],
- grandparent_death:["eski evin çatısı","baston ve ocak"],
- widowed:["yarım kalmış iki figür","boş sedir"]
-};
-const render=(template,name)=>template.replaceAll("{person}",name);
-export function createPersonalNotebooks(world) {
+export function createPersonalNotebooks(world){
  const byId=new Map(world.people.map(p=>[p.id,p]));
- const books=new Map();
+ const lifeBooks=buildLifeBooks(world),books=new Map();
  for(const person of world.people){
-  const rng=new RNG(world.seed+":notebook:"+person.id);
-  const entries=[];
-  const earliest=person.birthYear+Math.max(7,rng.int(7,11));
-  const events=[];
-  for(const event of person.history??[])if(event.type!=="birth")events.push({...event,subjectId:event.personId??person.id});
-  for(const id of person.childIds??[]){const p=byId.get(id);if(p)events.push({year:p.birthYear,type:"child_birth",subjectId:id});}
-  for(const id of person.parentIds??[]){const p=byId.get(id);if(p?.deathYear!=null)events.push({year:p.deathYear,type:"parent_death",subjectId:id});}
-  for(const p of world.people){
-   if(p.id===person.id||!p.parentIds?.some(id=>person.parentIds?.includes(id)))continue;
-   if(p.birthYear>=person.birthYear)events.push({year:p.birthYear,type:"sibling_birth",subjectId:p.id});
-  }
-  const unique=new Set();
-  for(const event of events.sort((a,b)=>a.year-b.year||a.type.localeCompare(b.type))){
-   if(event.year<earliest||event.year>(person.deathYear??world.year)||event.type==="death")continue;
-   const key=event.year+":"+event.type+":"+event.subjectId;
-   if(unique.has(key))continue;unique.add(key);
-   const templates=TEMPLATES[event.type];if(!templates)continue;
-   // Not every event is written down; this is the person's notebook, not a registry.
-   if(!rng.chance(event.type==="parent_death"||event.type==="widowed"?0.92:0.72))continue;
-   const subject=byId.get(event.subjectId);
-   const name=subject?.name??"bir yakınım";
-   const text=render(rng.pick(templates),name);
-   const sketch=rng.chance(0.43)?rng.pick(SKETCHES[event.type]):null;
-   entries.push({year:event.year,age:event.year-person.birthYear,eventType:event.type,
-    subjectId:event.subjectId,text,sketch,handwriting:rng.pick(["düzenli","aceleci","sıkışık","iri harfli"]),
-    provenance:"personal_expression"});
-  }
-  books.set(person.id,{personId:person.id,owner:person.name+" "+person.surname,
-    earliestPossibleEntryYear:earliest,entries});
+  const life=lifeBooks.get(person.id);
+  const entries=life.entries.map((event,index)=>{
+   const rng=new RNG(world.seed+":notebook:"+person.id+":"+event.year+":"+event.type+":"+event.subjectId+":"+index);
+   const stage=lifeStage(event.age);
+   const provenance=event.age<7?"family_record":"life_account";
+   return {year:event.year,age:event.age,stage,eventType:event.type,
+    subjectId:event.subjectId,provenance,text:sentence(event,person,byId.get(event.subjectId),rng)};
+  });
+  books.set(person.id,{personId:person.id,owner:full(person),birthYear:person.birthYear,
+   deathYear:person.deathYear??null,alive:person.alive!==false,
+   parentIds:[...life.parentIds],childIds:[...life.childIds],
+   partnerId:life.partnerId,previousPartnerIds:[...life.previousPartnerIds],
+   entries});
  }
  return books;
 }
-export function formatPersonalNotebook(world,id){
+export function formatPersonalNotebook(world,id,{stage=null}={}){
  const person=world.people.find(p=>p.id===id);
  if(!person)throw new Error("Unknown person ID: "+id);
- const book=createPersonalNotebooks(world).get(id);
- return [book.owner+" — Kişisel Defter","Bu defter hayatın eksiksiz kaydı değildir.",
-  ...(book.entries.length?book.entries.flatMap(e=>["",e.year+" · "+e.age+" yaş",e.text,...(e.sketch?["[Karalama: "+e.sketch+"]"]:[])])
-   :["Henüz yazılmış bir sayfa yok."])].join("\n");
+ if(stage!==null&&!STAGES.some(([name])=>name===stage))throw new Error("Unknown life stage: "+stage);
+ const book=createPersonalNotebooks(world).get(id),byId=new Map(world.people.map(p=>[p.id,p]));
+ const names=ids=>ids.length?ids.map(i=>full(byId.get(i))+" (#"+i+")").join(", "):"?";
+ const lines=[book.owner+" — Hayat Defteri",
+  "Doğum: "+book.birthYear+" | "+(book.alive?"Hayatta":"Ölüm: "+book.deathYear),
+  "Anne-baba: "+names(book.parentIds),"Çocuklar: "+names(book.childIds),
+  "Eş: "+(book.partnerId?names([book.partnerId]):"?"),
+  "Önceki eş bağları: "+names(book.previousPartnerIds)];
+ let previous=null;
+ for(const e of book.entries.filter(e=>stage===null||e.stage===stage)){
+  if(e.stage!==previous){lines.push("","— "+e.stage.toLocaleUpperCase("tr-TR")+" —");previous=e.stage;}
+  lines.push(e.year+" · "+e.age+" yaş"+(e.provenance==="family_record"?" · aile kaydı":"")+": "+e.text);
+ }
+ if(previous===null)lines.push("","Bu döneme ait kayıt bulunmuyor.");
+ return lines.join("\n");
 }
 export function validatePersonalNotebooks(world){
- const errors=[],books=createPersonalNotebooks(world),ids=new Set(world.people.map(p=>p.id));
- for(const p of world.people){
-  const b=books.get(p.id);
-  if(!b){errors.push("missing notebook: "+p.id);continue;}
-  for(const e of b.entries){
-   if(e.year<b.earliestPossibleEntryYear||e.year>(p.deathYear??world.year)||!ids.has(e.subjectId))
-    errors.push("invalid notebook entry: "+p.id);
+ const errors=[],books=createPersonalNotebooks(world),lifeBooks=buildLifeBooks(world);
+ if(books.size!==world.people.length)errors.push("missing notebooks");
+ for(const person of world.people){
+  const notebook=books.get(person.id),life=lifeBooks.get(person.id);
+  if(!notebook){errors.push("missing notebook: "+person.id);continue;}
+  if(notebook.entries.length!==life.entries.length)errors.push("event count mismatch: "+person.id);
+  for(let i=0;i<notebook.entries.length;i++){
+   const e=notebook.entries[i],source=life.entries[i];
+   if(!source||e.year!==source.year||e.eventType!==source.type||e.subjectId!==source.subjectId)
+    errors.push("event divergence: "+person.id+":"+i);
+   if(e.age<0||e.year>(person.deathYear??world.year)||e.stage!==lifeStage(e.age))
+    errors.push("invalid notebook timeline: "+person.id+":"+i);
+   if(e.age<7&&e.provenance!=="family_record")errors.push("infant false memory: "+person.id+":"+i);
+   if("sketch" in e||"handwriting" in e)errors.push("obsolete drawing field: "+person.id+":"+i);
   }
  }
  return errors;
