@@ -17,17 +17,17 @@ const unrelated=(a,b,byId)=>{
 export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,endYear=1600}={}){
  if(!Number.isInteger(founderFamilies)||founderFamilies<1||founderFamilies>24)throw new Error("founderFamilies must be 1..24");
  if(!Number.isInteger(startYear)||!Number.isInteger(endYear)||endYear<=startYear)throw new Error("invalid years");
- const rng=new RNG(String(seed)+":monthly-life:v1");
- const world={seed:String(seed),version:"monthly-life:v1",year:startYear,month:1,monthCount:0,
+ const rng=new RNG(String(seed)+":monthly-life:v2");
+ const world={seed:String(seed),version:"monthly-life:v2",year:startYear,month:1,monthCount:0,
   people:[],households:[],events:[],initialConditions:[],generationLimit:3};
  const byId=new Map();let personId=1,houseId=1;
- const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85)};world.households.push(h);return h;};
+ const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85),workPressure:rng.int(15,75)};world.households.push(h);return h;};
  const person=(sex,bornAt,surname,home,generation,parents=[],initial=false)=>{
   const p={id:personId++,name:pickName(rng,sex),surname,sex,bornAt,birthYear:Math.floor(bornAt/12),
    birthMonth:bornAt%12+1,generation,parentIds:parents.map(x=>x.id),childIds:[],
    householdId:home.id,originHouseholdId:home.id,partnerId:null,alive:true,deathAt:null,
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
-   skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,
+   skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,educationDecision:null,accidents:0,
    state:{energy:80,health:90},experienceMonths:initial?0:1,history:[]};
   home.members.push(p.id);world.people.push(p);byId.set(p.id,p);
   for(const parent of parents)parent.childIds.push(p.id);
@@ -72,13 +72,25 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    const age=ageMonths(p,at),h=world.households.find(x=>x.id===p.householdId);
    p.experienceMonths++;
    p.state.energy=clamp(p.state.energy+rng.int(-4,5));
+   if(age===6*12){
+    const support=clamp(h.educationSupport-h.workPressure*0.45+(p.traits.curiosity-50)*0.3);
+    p.educationDecision=rng.chance(support/100)?"learning":"household_work";
+    record("childhood_path",at,[p.id,...p.parentIds],h.id,{path:p.educationDecision,supportProbability:support/100});
+   }
    if(age>=6*12&&age<16*12){
-    const workChance=(100-h.educationSupport)/140;
+    const workChance=p.educationDecision==="household_work"?0.78:0.26;
     if(rng.chance(workChance))p.skills.housework=clamp(p.skills.housework+0.25);
     else p.skills.learning=clamp(p.skills.learning+0.25);
    }else if(age>=16*12){
     const key=p.surname==="Çoban"?"animalCare":p.surname==="Demirci"?"craft":"housework";
     p.skills[key]=clamp(p.skills[key]+0.14);
+    // A work accident is conditional on exposure, coordination, attention and fatigue.
+    const risk=clamp(0.12+(p.traits.clumsiness-50)*0.004+(50-p.traits.attention)*0.002+(50-p.state.energy)*0.002)/100;
+    if(rng.chance(risk)){
+     p.accidents++;const severity=rng.chance(0.14)?"injury":"minor";
+     if(severity==="injury")p.state.health=clamp(p.state.health-rng.int(4,12));
+     record("work_accident",at,[p.id],h.id,{severity,probability:risk});
+    }
    }
    if(age>=8*12&&!p.hobby&&rng.chance(0.018)){
     p.hobby=rng.pick(["oyma yapmak","türkü söylemek","bahçecilik","hikâye anlatmak","yürüyüş"]);
