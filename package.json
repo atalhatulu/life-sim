@@ -13,6 +13,7 @@
     "village": "node src/village-cli.js",
     "audit:stories": "node src/story-audit-cli.js",
     "uyuk": "node src/canonical-cli.js",
-    "census": "node src/census-cli.js"
+    "census": "node src/census-cli.js",
+    "generations": "node src/generations-cli.js"
   }
 }
