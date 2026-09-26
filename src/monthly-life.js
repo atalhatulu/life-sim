@@ -17,15 +17,15 @@ const unrelated=(a,b,byId)=>{
 export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,endYear=1600}={}){
  if(!Number.isInteger(founderFamilies)||founderFamilies<1||founderFamilies>24)throw new Error("founderFamilies must be 1..24");
  if(!Number.isInteger(startYear)||!Number.isInteger(endYear)||endYear<=startYear)throw new Error("invalid years");
- const rng=new RNG(String(seed)+":monthly-life:v2");
- const world={seed:String(seed),version:"monthly-life:v2",year:startYear,month:1,monthCount:0,
+ const rng=new RNG(String(seed)+":monthly-life:v3");
+ const world={seed:String(seed),version:"monthly-life:v3",year:startYear,month:1,monthCount:0,
   people:[],households:[],events:[],initialConditions:[],generationLimit:3};
  const byId=new Map();let personId=1,houseId=1;
  const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85),workPressure:rng.int(15,75)};world.households.push(h);return h;};
  const person=(sex,bornAt,surname,home,generation,parents=[],initial=false)=>{
   const p={id:personId++,name:pickName(rng,sex),surname,sex,bornAt,birthYear:Math.floor(bornAt/12),
    birthMonth:bornAt%12+1,generation,parentIds:parents.map(x=>x.id),childIds:[],
-   householdId:home.id,originHouseholdId:home.id,partnerId:null,alive:true,deathAt:null,
+   householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
    skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,educationDecision:null,accidents:0,
    state:{energy:80,health:90},experienceMonths:initial?0:1,history:[]};
@@ -62,6 +62,30 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   a.partnerId=b.id;b.partnerId=a.id;move(a,h,at);move(b,h,at);
   record("marriage",at,[a.id,b.id],h.id);
  };
+ const die=(p,at,cause,probability)=>{
+  if(!p.alive)return;
+  const h=world.households.find(x=>x.id===p.householdId);
+  const partner=p.partnerId?byId.get(p.partnerId):null;
+  const affected=new Set([p.id,...p.childIds,...h.members]);
+  if(partner)affected.add(partner.id);
+  p.alive=false;p.deathAt=at;p.deathCause=cause;
+  if(partner){
+   partner.previousPartnerIds.push(p.id);
+   partner.partnerId=null;p.previousPartnerIds.push(partner.id);p.partnerId=null;
+  }
+  h.members=h.members.filter(id=>id!==p.id);
+  for(const id of affected)if(id!==p.id){const relative=byId.get(id);if(relative?.alive)relative.bereavements++;}
+  record("death",at,[...affected],h.id,{deceasedId:p.id,cause,probability});
+ };
+ const monthlyMortality=(p,at)=>{
+  const age=ageMonths(p,at)/12;
+  // Fictional simulation parameters, not historical mortality estimates.
+  const annual=age<1?0.075:age<5?0.018:age<15?0.003:age<40?0.005:
+   age<55?0.012:age<65?0.025:age<75?0.065:age<85?0.15:0.32;
+  const healthFactor=1+(100-p.state.health)/100*2.2;
+  const annualRisk=Math.min(0.95,annual*healthFactor);
+  return 1-Math.pow(1-annualRisk,1/12);
+ };
  const birthCooldown=new Map();
  for(let at=start;at<=end;at++){
   const year=Math.floor(at/12),month=at%12+1;
@@ -95,6 +119,11 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    if(age>=8*12&&!p.hobby&&rng.chance(0.018)){
     p.hobby=rng.pick(["oyma yapmak","türkü söylemek","bahçecilik","hikâye anlatmak","yürüyüş"]);
     record("hobby_discovered",at,[p.id],h.id,{hobby:p.hobby});
+   }
+   const deathRisk=monthlyMortality(p,at);
+   if(rng.chance(deathRisk)){
+    const cause=p.state.health<55?"poor_health":age>=65*12?"age_related":"illness_or_accident";
+    die(p,at,cause,deathRisk);
    }
   }
   // Monthly marriage checks; no child is born from a third-generation couple in the initial history.
@@ -130,20 +159,22 @@ export function validateMonthlyVillage(world){
  if(byId.size!==world.people.length)errors.push("duplicate person id");
  for(const h of world.households)for(const id of h.members)members.set(id,(members.get(id)??0)+1);
  for(const p of world.people){
-  if(members.get(p.id)!==1)errors.push("household membership "+p.id);
-  if(!world.households.some(h=>h.id===p.householdId&&h.members.includes(p.id)))errors.push("household pointer "+p.id);
+  if(members.get(p.id)!==(p.alive?1:0))errors.push("household membership "+p.id);
+  if(p.alive&&!world.households.some(h=>h.id===p.householdId&&h.members.includes(p.id)))errors.push("household pointer "+p.id);
   if(p.generation<1||p.generation>3)errors.push("generation "+p.id);
   if(p.experienceMonths<1)errors.push("missing lived months "+p.id);
   for(const id of p.parentIds){
    const parent=byId.get(id);
    if(!parent||!parent.childIds.includes(p.id)||p.bornAt-parent.bornAt<17*12||parent.generation!==p.generation-1)errors.push("parent "+p.id);
   }
-  if(p.partnerId&&byId.get(p.partnerId)?.partnerId!==p.id)errors.push("partner "+p.id);
+  if(p.partnerId&&(!p.alive||!byId.get(p.partnerId)?.alive||byId.get(p.partnerId)?.partnerId!==p.id))errors.push("partner "+p.id);
+  if((p.alive&&p.deathAt!==null)||(!p.alive&&p.deathAt===null))errors.push("death state "+p.id);
   if(p.generation===3&&p.childIds.length)errors.push("fourth generation "+p.id);
  }
  for(const e of world.events){
   if(e.at>monthIndex(world.year,world.month))errors.push("future event");
   if(e.type==="birth"&&e.personIds.some(id=>!byId.has(id)))errors.push("birth person");
+  if(e.type==="death"&&byId.get(e.deceasedId)?.deathAt!==e.at)errors.push("death event");
  }
  return errors;
 }
