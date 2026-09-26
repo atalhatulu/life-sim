@@ -19,7 +19,8 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
     person.alive = true;
     person.deathYear = null;
     person.previousPartnerIds = [];
-    person.originHouseholdId = person.householdId;
+    person.originHouseholdId = person.generation===2 && person.parentIds.length
+      ? byId.get(person.parentIds[0]).householdId : person.householdId;
   }
   // Marriage between unrelated branches connects otherwise isolated family trees.
   const candidates = world.people.filter(p => p.generation === 2 && !p.partnerId);
