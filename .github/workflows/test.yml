@@ -12,3 +12,4 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: npm run genealogy -- uyuk-1600 4
+      - run: npm run book -- uyuk-1600 1
