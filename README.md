@@ -38,3 +38,9 @@ Her insanın (bebekler ve ölmüş atalar dahil) hayat defteri aynı kanonik ya�
 - Kanonik olay dökümü: `npm run book -- uyuk-1600 1`
 
 Başlangıç kuşağındaki dede ve ninelerin anne-babaları bilinmiyor (`?`); onların ataları ayrıca üretilmez. Hane adları oyun içi aile tanımlayıcılarıdır, modern resmî soyadı değildir.
+
+## 1600 öncesi köy geçmişi (ilk replay)
+
+`npm run village -- uyuk-1600 1` komutu, kurucu kuşağın doğumundan 1600'e kadar yıllık hane hesaplarını, çıraklığa/mesleğe girişleri ve hane içi ortak olayları üretir; ardından seçilen kişinin defterini gösterir. `src/village-history.js` hane gıda/para defterlerini, yıllık nüfusu, kişi kimliklerine bağlı ilişki olaylarını ve meslek kayıtlarını tutar. Aynı seed aynı geçmişi verir.
+
+**Sınır:** Bu, mevcut soy ağacındaki doğum/evlilik/ölüm tarihlerini girdi alan retrospektif bir simülasyonun ilk sürümüdür. Nüfusun tamamı henüz yıl yıl doğup karar vererek oluşmaz; mesleklerin tarihsel doğruluğu ve köyün vergi/arazi/üretim koşulları ayrıca araştırılmalıdır. Bu sürüm, Üyük'ün 1600'deki gerçek nüfusunu temsil ettiği iddiasında değildir.
