@@ -4,7 +4,7 @@ const errors=validateMonthlyVillage(world);
 if(errors.length)throw new Error(errors.slice(0,10).join('; '));
 const counts=[1,2,3].map(g=>world.people.filter(p=>p.generation===g).length);
 console.log(`Üyük · seed ${world.seed} · ${world.year}/${world.month} · ${world.monthCount} ay`);
-console.log(`Kurucular: ${counts[0]} | Çocuklar: ${counts[1]} | Torunlar: ${counts[2]} | Toplam: ${world.people.length}`);
+console.log(`Kurucular: ${counts[0]} | Çocuklar: ${counts[1]} | Torunlar: ${counts[2]} | Toplam doğan: ${world.people.length} | Hayatta: ${world.people.filter(p=>p.alive).length} | Ölen: ${world.people.filter(p=>!p.alive).length}`);
 console.log(`Haneler: ${world.households.filter(h=>h.members.length).length} | Kaydedilmiş olaylar: ${world.events.length}`);
 for(const h of world.households.filter(h=>h.members.length)){
  console.log(`\n${h.label} (#${h.id})`);
