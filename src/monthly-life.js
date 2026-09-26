@@ -63,6 +63,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   const h=house(a.surname+" yeni hanesi",a.generation,at);
   a.partnerId=b.id;b.partnerId=a.id;move(a,h,at);move(b,h,at);
   record("marriage",at,[a.id,b.id],h.id);
+  for(const child of world.people)if(child.alive&&ageMonths(child,at)<16*12&&(child.guardianId===a.id||child.guardianId===b.id)&&child.householdId!==h.id)assignCare(child,at);
  };
  const assignCare=(child,at)=>{
   if(!child.alive||ageMonths(child,at)>=16*12)return;
