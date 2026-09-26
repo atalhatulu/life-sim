@@ -3,9 +3,9 @@ import {pickName,HOUSE_NAMES} from "./names.js";
 
 // Three-generation demographic prototype. Events are created forward in time;
 // no person or birth is inserted retroactively to satisfy a population quota.
-export function generateThreeGenerations(seed=1,{families=4,endYear=1600}={}){
+export function generateThreeGenerations(seed=1,{families=8,endYear=1600}={}){
  if(!Number.isInteger(families)||families<1||families>24)throw new Error("families must be 1..24");
- const rng=new RNG(String(seed)+":three-generations:v1");
+ const rng=new RNG(String(seed)+":three-generations:v2");
  const people=[],households=[],events=[],byId=new Map();
  let nextPerson=1,nextHouse=1;
  const house=(name,year,generation)=>{
@@ -34,6 +34,8 @@ export function generateThreeGenerations(seed=1,{families=4,endYear=1600}={}){
   }
   events.push({year,type:"marriage",personIds:[a.id,b.id],householdId:home.id});
  };
+ const ancestors=p=>{const seen=new Set(),visit=x=>{for(const id of x.parentIds){if(seen.has(id))continue;seen.add(id);visit(byId.get(id));}};visit(p);return seen;};
+ const unrelated=(a,b)=>{const aa=ancestors(a),bb=ancestors(b);return a.id!==b.id&&!aa.has(b.id)&&!bb.has(a.id)&&![...aa].some(id=>bb.has(id));};
  const founders=[];
  // Founder birth dates and initial marriages are the explicit starting conditions.
  for(let i=0;i<families;i++){
@@ -74,7 +76,7 @@ export function generateThreeGenerations(seed=1,{families=4,endYear=1600}={}){
   const women=eligible.filter(p=>p.sex==="F");
   for(const a of men){
    if(a.partnerId||!rng.chance(0.24))continue;
-   const choices=women.filter(b=>!b.partnerId&&b.originHouseholdId!==a.originHouseholdId&&
+   const choices=women.filter(b=>!b.partnerId&&unrelated(a,b)&&
     Math.abs(a.birthYear-b.birthYear)<=10);
    if(!choices.length)continue;
    const b=rng.pick(choices),home=house(a.surname+" yeni hanesi",year,2);
@@ -88,6 +90,16 @@ export function generateThreeGenerations(seed=1,{families=4,endYear=1600}={}){
    if(rng.chance(0.16)){
     const child=birth([a,b],year,3);third.push(child);a.lastBirth=year;
    }
+  }
+  // Adult grandchildren can marry and establish households; fourth-generation births are deferred.
+  const eligibleThird=third.filter(p=>!p.partnerId&&year-p.birthYear>=18&&year-p.birthYear<=35);
+  const thirdWomen=eligibleThird.filter(p=>p.sex==="F");
+  for(const a of eligibleThird.filter(p=>p.sex==="M")){
+   if(a.partnerId||!rng.chance(0.24))continue;
+   const choices=thirdWomen.filter(b=>!b.partnerId&&unrelated(a,b)&&Math.abs(a.birthYear-b.birthYear)<=10);
+   if(!choices.length)continue;
+   const b=rng.pick(choices),home=house(a.surname+" torun hanesi",year,3);
+   marry(a,b,year,home);
   }
  }
  for(const p of people)p.age=endYear-p.birthYear;
@@ -123,5 +135,14 @@ export function validateThreeGenerations(world){
  for(const h of world.households)for(const id of h.members)if(byId.get(id)?.householdId!==h.id)
   errors.push("duplicate household membership: "+id);
  if(world.people.filter(p=>p.generation===3).some(p=>p.childIds.length))errors.push("fourth generation child");
+ for(const e of world.events.filter(e=>e.type==="marriage")){
+  const [a,b]=e.personIds.map(id=>byId.get(id));
+  if(!a||!b||a.generation!==b.generation)errors.push("invalid generation marriage");
+  if(a&&b&&a.generation>1){
+   const ancestors=p=>{const ids=new Set(),visit=x=>{for(const id of x.parentIds){if(ids.has(id))continue;ids.add(id);visit(byId.get(id));}};visit(p);return ids;};
+   const aa=ancestors(a),bb=ancestors(b);
+   if(aa.has(b.id)||bb.has(a.id)||[...aa].some(id=>bb.has(id)))errors.push("related marriage: "+a.id+":"+b.id);
+  }
+ }
  return errors;
 }
