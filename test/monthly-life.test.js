@@ -12,3 +12,16 @@ test('monthly histories are deterministic and valid',()=>{
 test('100 seeds preserve monthly genealogy',()=>{
  for(let seed=1;seed<=100;seed++)assert.deepEqual(validateMonthlyVillage(createMonthlyVillage(seed)),[],'seed '+seed);
 });
+
+test('births follow conception by nine months and never precede parental lifetimes',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const w=createMonthlyVillage(seed),byId=new Map(w.people.map(p=>[p.id,p]));
+  for(const e of w.events.filter(e=>e.type==='delivery')){
+   const child=byId.get(e.childId),mother=byId.get(e.personIds[0]),father=byId.get(e.personIds[1]);
+   assert.equal(e.at-e.conceivedAt,9);
+   assert.equal(child.bornAt,e.at);
+   assert.ok(mother.deathAt===null||mother.deathAt>=e.at);
+   assert.ok(father.deathAt===null||father.deathAt>=e.conceivedAt);
+  }
+ }
+});
