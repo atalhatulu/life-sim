@@ -1,7 +1,7 @@
 import {createMonthlyVillage,validateMonthlyVillage} from "./monthly-life.js";
 const w=createMonthlyVillage(process.argv[2]??1),errors=validateMonthlyVillage(w);
 if(errors.length)throw new Error(errors.join("; "));
-const descendants=p=>{const seen=new Set(),queue=[p.id];while(queue.length){const x=w.people.find(q=>q.id===queue.shift());for(const id of x.childIds)if(!seen.has(id)){seen.add(id);queue.push(id);}}return seen.size;};
+const descendants=p=>{const seen=new Set(),queue=[p.id];while(queue.length){const next=queue.shift(),x=w.people.find(q=>q.id===next);for(const id of x.childIds)if(!seen.has(id)){seen.add(id);queue.push(id);}}return seen.size;};
 const founder=w.people.filter(p=>p.generation===1&&p.sex==="M").sort((a,b)=>descendants(b)-descendants(a))[0];
 const ids=new Set([founder.id]),queue=[founder.id];
 while(queue.length){const p=w.people.find(x=>x.id===queue.shift());for(const id of p.childIds)if(!ids.has(id)){ids.add(id);queue.push(id);}}
