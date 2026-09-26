@@ -11,6 +11,7 @@
     "book": "node src/book-cli.js",
     "notebook": "node src/notebook-cli.js",
     "village": "node src/village-cli.js",
-    "audit:stories": "node src/story-audit-cli.js"
+    "audit:stories": "node src/story-audit-cli.js",
+    "uyuk": "node src/canonical-cli.js"
   }
 }
