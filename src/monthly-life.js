@@ -28,7 +28,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    householdId:home.id,originHouseholdId:home.id,partnerId:null,alive:true,deathAt:null,
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
    skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,
-   state:{energy:80,health:90},experienceMonths:0,history:[]};
+   state:{energy:80,health:90},experienceMonths:initial?0:1,history:[]};
   home.members.push(p.id);world.people.push(p);byId.set(p.id,p);
   for(const parent of parents)parent.childIds.push(p.id);
   if(initial)world.initialConditions.push({type:"founder",personId:p.id,bornAt});
