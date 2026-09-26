@@ -1,28 +1,52 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createLivingLineage} from "../src/lineage.js";
-import {createPersonalNotebooks,formatPersonalNotebook,validatePersonalNotebooks} from "../src/personal-notebook.js";
+import {buildLifeBooks} from "../src/life-book.js";
+import {createPersonalNotebooks,formatPersonalNotebook,validatePersonalNotebooks,lifeStage} from "../src/personal-notebook.js";
 import {GIVEN_NAMES,HOUSE_NAMES} from "../src/names.js";
-test("name palette is expanded and has no duplicate names per gender",()=>{
+test("expanded names and founding ancestors have unknown parents",()=>{
  assert.ok(GIVEN_NAMES.F.length>=25&&GIVEN_NAMES.M.length>=25&&HOUSE_NAMES.length>=20);
  for(const names of [GIVEN_NAMES.F,GIVEN_NAMES.M,HOUSE_NAMES])assert.equal(new Set(names).size,names.length);
+ const world=createLivingLineage("founders",8);
+ assert.ok(world.people.filter(p=>p.generation===1).every(p=>p.parentIds.length===0));
 });
-test("1000 notebook populations have no infant memories or postmortem entries",()=>{
+test("1000 seeds: every person has complete, synchronized birth-to-death notebook",()=>{
  for(let seed=0;seed<1000;seed++){
   const w=createLivingLineage("notebook-"+seed,8);
   assert.deepEqual(validatePersonalNotebooks(w),[],"seed="+seed);
-  const books=createPersonalNotebooks(w);
-  assert.equal(books.size,w.people.length);
-  for(const p of w.people)for(const e of books.get(p.id).entries){
-   assert.ok(e.age>=7);
-   assert.ok(e.year<=(p.deathYear??w.year));
-   assert.notEqual(e.eventType,"death");
+  const notebooks=createPersonalNotebooks(w),life=buildLifeBooks(w);
+  assert.equal(notebooks.size,w.people.length);
+  for(const p of w.people){
+   const n=notebooks.get(p.id),source=life.get(p.id);
+   assert.equal(n.entries.length,source.entries.length);
+   assert.equal(n.entries[0].eventType,"birth");
+   assert.deepEqual(n.entries.map(e=>e.year),[...n.entries.map(e=>e.year)].sort((a,b)=>a-b));
+   for(const e of n.entries){
+    assert.ok(e.year>=p.birthYear&&e.year<=(p.deathYear??w.year));
+    assert.equal(e.stage,lifeStage(e.age));
+    if(e.age<7)assert.equal(e.provenance,"family_record");
+    assert.ok(!("sketch" in e));
+   }
+   if(!p.alive)assert.ok(n.entries.some(e=>e.eventType==="death"&&e.year===p.deathYear));
   }
  }
 });
-test("notebook is deterministic, personal and not the full registry",()=>{
+test("shared births, death, marriage and household changes appear in related books",()=>{
+ const w=createLivingLineage("shared-notebook",8),books=createPersonalNotebooks(w);
+ for(const child of w.people.filter(p=>p.parentIds.length===2))
+  for(const parentId of child.parentIds)
+   assert.ok(books.get(parentId).entries.some(e=>e.eventType==="child_birth"&&e.subjectId===child.id));
+ for(const p of w.people.filter(p=>!p.alive))
+  assert.ok(books.get(p.id).entries.some(e=>e.eventType==="death"));
+ for(const marriage of w.marriages)
+  for(const id of marriage.partnerIds)
+   assert.ok(books.get(id).entries.some(e=>e.eventType==="household_move"));
+});
+test("notebook is deterministic, stage-filterable and unknown ID fails",()=>{
  const w=createLivingLineage("journal",8);
  assert.deepEqual(createPersonalNotebooks(w),createPersonalNotebooks(createLivingLineage("journal",8)));
- assert.match(formatPersonalNotebook(w,1),/Kişisel Defter/);
+ assert.match(formatPersonalNotebook(w,1),/Hayat Defteri/);
+ assert.match(formatPersonalNotebook(w,1,{stage:"bebeklik"}),/aile kaydı/);
  assert.throws(()=>formatPersonalNotebook(w,-1));
+ assert.throws(()=>formatPersonalNotebook(w,1,{stage:"not-a-stage"}));
 });
