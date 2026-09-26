@@ -48,9 +48,7 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
     for(let i=0;i<childCount;i++) {
       const age = rng.int(0,maximumAge);
       const child = {
-        id:nextPersonId++,name:rng.pick(woman.sex==="F"
-          ? ["Ayşe","Fatma","Emine","Hatice","Zeynep","Elif","Mehmet","Ali","Hasan","Mustafa"]
-          : ["Mehmet","Ali"]),surname:man.surname,sex:rng.chance(0.5)?"F":"M",
+        id:nextPersonId++,name:null,surname:man.surname,sex:rng.chance(0.5)?"F":"M",
         age,birthYear:year-age,generation:3,householdId:household.id,
         originHouseholdId:household.id,parentIds:[man.id,woman.id],childIds:[],partnerId:null,
         previousPartnerIds:[],alive:true,deathYear:null,
@@ -58,6 +56,7 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
         hobby:rng.pick(["bahçecilik","balık tutmak","hikâye anlatmak"]),
         history:[{year:year-age,type:"birth"}]
       };
+      child.name=rng.pick(child.sex==="F"?["Ayşe","Fatma","Emine","Hatice","Zeynep","Elif"]:["Mehmet","Ali","Hasan","Mustafa"]); 
       world.people.push(child);byId.set(child.id,child);household.members.push(child.id);
       man.childIds.push(child.id);woman.childIds.push(child.id);children.push(child.id);
     }
@@ -83,7 +82,7 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
       spouse.partnerId=null;
       person.previousPartnerIds.push(spouse.id);
       person.partnerId=null;
-      spouse.history.push({year:deathYear,type:"widowed",personId:person.id});
+      if(spouse.alive) spouse.history.push({year:deathYear,type:"widowed",personId:person.id});
     }
     deceased.push(person.id);
   }
