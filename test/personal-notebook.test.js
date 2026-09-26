@@ -50,3 +50,19 @@ test("notebook is deterministic, stage-filterable and unknown ID fails",()=>{
  assert.throws(()=>formatPersonalNotebook(w,-1));
  assert.throws(()=>formatPersonalNotebook(w,1,{stage:"not-a-stage"}));
 });
+test("a child's death is recorded in parents' and siblings' notebooks",()=>{
+ const w=createLivingLineage("loss-test",8);
+ const child=w.people.find(p=>p.generation===3&&p.parentIds.length===2&&p.age>=1);
+ assert.ok(child);
+ const deathYear=w.year;
+ child.alive=false;child.deathYear=deathYear;child.age=deathYear-child.birthYear;
+ child.history.push({year:deathYear,type:"death"});
+ const household=w.households.find(h=>h.id===child.householdId);
+ household.members=household.members.filter(id=>id!==child.id);child.householdId=null;
+ const books=createPersonalNotebooks(w);
+ for(const id of child.parentIds)
+  assert.ok(books.get(id).entries.some(e=>e.eventType==="child_death"&&e.subjectId===child.id));
+ for(const sibling of w.people.filter(p=>p.id!==child.id&&p.parentIds.some(id=>child.parentIds.includes(id))))
+  assert.ok(books.get(sibling.id).entries.some(e=>e.eventType==="sibling_death"&&e.subjectId===child.id));
+ assert.deepEqual(validatePersonalNotebooks(w),[]);
+});
