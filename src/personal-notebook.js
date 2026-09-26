@@ -16,6 +16,8 @@ const sentence=(entry,person,subject,rng)=>{
   sibling_birth:[name+" doğdu; artık bir kardeşi daha var.",name+" aileye katıldı. Kardeş sayısı arttı."],
   parent_death:[name+" hayatını kaybetti; ailesindeki yeri boş kaldı.",name+" öldü. Aile bir ebeveynini kaybetti."],
   grandparent_death:[name+" hayatını kaybetti; ailenin eski kuşağından biri eksildi.",name+" öldü. Ailenin geçmişinden bir kişi daha ayrıldı."],
+  sibling_death:[name+" hayatını kaybetti. Bir kardeşi eksildi.",name+" öldü; kardeşlik bağı artık anılarda yaşayacak."],
+  child_death:[name+" hayatını kaybetti. Çocuğunu kaybetti.",name+" öldü; aile çocuğunun yasını tutuyor."],
   widowed:[name+" hayatını kaybetti; evliliği ölümle sona erdi.",name+" öldü. Eşini kaybetti."],
   death:[person.name+" hayatını kaybetti.",person.name+"'in hayatı sona erdi."],
   household_move:["Başka bir haneye taşındı.","Yaşadığı hane değişti."]
