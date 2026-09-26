@@ -27,3 +27,14 @@ The new `src/genealogy.js` creates founder couples, their adult children and a t
 ## Connected lineages
 
 Run `npm run lineage -- uyuk-1600 8` to inspect multiple families linked by marriages, their children and deceased founders. Dead people remain in genealogy but not living households. `npm test` includes a 1,000-seed chronological integrity stress test. The original daily activity engine is retained but not the current focus.
+
+## Karakter hayat defterleri
+
+Her insanın (bebekler ve ölmüş atalar dahil) hayat defteri aynı kanonik yaşam olaylarından üretilir. Defterler doğumdan ölüme kadar kronolojik ilerler; bebeklik, çocukluk, gençlik, yetişkinlik ve yaşlılık bölümlerine ayrılır. Yedi yaşından önceki olaylar kişisel anı olarak değil, aile kaydı olarak sunulur. Çizim ve karalama alanları yoktur.
+
+- Tüm defter: `npm run notebook -- uyuk-1600 1`
+- Sadece çocukluk: `npm run notebook -- uyuk-1600 1 çocukluk`
+- Başka karakter: son sayısal kimliği değiştirin.
+- Kanonik olay dökümü: `npm run book -- uyuk-1600 1`
+
+Başlangıç kuşağındaki dede ve ninelerin anne-babaları bilinmiyor (`?`); onların ataları ayrıca üretilmez. Hane adları oyun içi aile tanımlayıcılarıdır, modern resmî soyadı değildir.
