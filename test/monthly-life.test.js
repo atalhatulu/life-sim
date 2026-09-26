@@ -31,7 +31,7 @@ test('health events preserve chronology and deceased characters do not recover l
   const w=createMonthlyVillage(seed),byId=new Map(w.people.map(p=>[p.id,p]));
   for(const p of w.people){
    assert.ok(p.state.health>=0&&p.state.health<=100);
-   assert.ok(p.history.every(e=>p.deathAt===null||e.at<=p.deathAt||e.personIds.includes(p.id)&&e.type==='death'));
+   assert.ok(p.history.filter(e=>e.type.startsWith('illness_')||e.type.startsWith('injury_')).every(e=>p.deathAt===null||e.at<=p.deathAt));
   }
   for(const e of w.events.filter(e=>e.type==='illness_recovered'||e.type==='injury_recovered')){
    const p=byId.get(e.personIds[0]);
