@@ -95,6 +95,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   h.members=h.members.filter(id=>id!==p.id);
   for(const id of affected)if(id!==p.id){const relative=byId.get(id);if(relative?.alive)relative.bereavements++;}
   record("death",at,[...affected],h.id,{deceasedId:p.id,cause,probability});
+  for(const child of world.people)if(child.alive&&ageMonths(child,at)<16*12&&(child.guardianId===p.id||child.parentIds.includes(p.id)))assignCare(child,at);
  };
  const monthlyMortality=(p,at)=>{
   const age=ageMonths(p,at)/12;
@@ -171,6 +172,14 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    const child=person(rng.chance(0.5)?"F":"M",at,father.surname,home,mother.generation+1,[father,mother]);
    mother.lastBirthAt=at;mother.pregnancy=null;
    record("delivery",at,[mother.id,father.id,child.id],home.id,{childId:child.id,conceivedAt:pregnancy.conceivedAt});
+   const complicationRisk=Math.min(0.09,0.012+(100-mother.state.health)/2500);
+   if(rng.chance(complicationRisk)){
+    const damage=rng.int(7,18);
+    mother.state.health=clamp(mother.state.health-damage);
+    mother.state.injury={severity:2,months:0};
+    record("delivery_complication",at,[mother.id,child.id],home.id,{damage,probability:complicationRisk});
+   }
+   assignCare(child,at);
   }
   // Monthly marriage checks; no child is born from a third-generation couple in the initial history.
   for(const generation of [2,3]){
