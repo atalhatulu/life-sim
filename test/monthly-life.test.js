@@ -59,3 +59,19 @@ test('children retain living guardians and delivery complications have valid par
   }
  }
 });
+
+test('childhood development is bounded and yearly records match accumulated months',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const w=createMonthlyVillage(seed);
+  assert.deepEqual(validateMonthlyVillage(w),[],'seed '+seed);
+  for(const p of w.people){
+   const c=p.childhood;
+   assert.ok(c.learningMonths<=c.months&&c.workMonths<=c.months&&c.lowCareMonths<=c.months);
+   assert.ok(c.careSum>=0&&c.careSum<=c.months*100);
+   for(const e of p.history.filter(e=>e.type==='childhood_year'&&e.personIds[0]===p.id)){
+    assert.ok(e.care>=0&&e.care<=100);
+    assert.ok(e.learningMonths<=c.learningMonths&&e.workMonths<=c.workMonths);
+   }
+  }
+ }
+});
