@@ -192,11 +192,17 @@ export function validateMonthlyVillage(world){
   if(p.partnerId&&(!p.alive||!byId.get(p.partnerId)?.alive||byId.get(p.partnerId)?.partnerId!==p.id))errors.push("partner "+p.id);
   if((p.alive&&p.deathAt!==null)||(!p.alive&&p.deathAt===null))errors.push("death state "+p.id);
   if(p.generation===3&&p.childIds.length)errors.push("fourth generation "+p.id);
+  if(p.pregnancy&&(!p.alive||p.sex!=="F"||p.generation>=3||p.pregnancy.dueAt!==p.pregnancy.conceivedAt+9))errors.push("pregnancy state "+p.id);
  }
  for(const e of world.events){
   if(e.at>monthIndex(world.year,world.month))errors.push("future event");
   if(e.type==="birth"&&e.personIds.some(id=>!byId.has(id)))errors.push("birth person");
   if(e.type==="death"&&byId.get(e.deceasedId)?.deathAt!==e.at)errors.push("death event");
+  if(e.type==="delivery"){
+   const child=byId.get(e.childId);
+   if(!child||child.bornAt!==e.at||e.at-e.conceivedAt!==9||!child.parentIds.includes(e.personIds[0])||!child.parentIds.includes(e.personIds[1]))errors.push("delivery chronology");
+  }
+  if(e.type==="conception"&&e.dueAt!==e.at+9)errors.push("conception chronology");
  }
  return errors;
 }
