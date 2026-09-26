@@ -1,4 +1,5 @@
 import { RNG } from "./engine.js";
+import { pickName, HOUSE_NAMES } from "./names.js";
 
 // Three generations are generated from ancestors forward, never from a player avatar.
 const FEMALE = ["Ayşe","Fatma","Emine","Hatice","Zeynep","Elif","Meryem"];
@@ -16,7 +17,7 @@ export function generateGenealogy(seed = "uyuk-1600", familyCount = 4, year = 16
     households.push(h); return h;
   };
   const makePerson = ({sex,age,surname,household,generation,parents=[]}) => {
-    const p = {id:nextPerson++,name:rng.pick(sex==="F"?FEMALE:MALE),surname,sex,age,birthYear:year-age,
+    const p = {id:nextPerson++,name:pickName(rng,sex),surname,sex,age,birthYear:year-age,
       generation,householdId:household.id,parentIds:parents.map(x=>x.id),childIds:[],partnerId:null,
       traits:[rng.pick(TRAITS),rng.pick(TRAITS)],hobby:rng.pick(HOBBIES),
       history:[{year:year-age,type:"birth"}]};
@@ -30,7 +31,7 @@ export function generateGenealogy(seed = "uyuk-1600", familyCount = 4, year = 16
     b.history.push({year:marriageYear,type:"marriage",personId:a.id});
   };
   for(let i=0;i<familyCount;i++) {
-    const surnameA=FAMILIES[(i*2)%FAMILIES.length], surnameB=FAMILIES[(i*2+1)%FAMILIES.length];
+    const surnameA=HOUSE_NAMES[(i*2)%HOUSE_NAMES.length], surnameB=HOUSE_NAMES[(i*2+1)%HOUSE_NAMES.length];
     const first=makeHouse(surnameA+" ata hanesi",1), second=makeHouse(surnameB+" ata hanesi",1);
     const grandfatherA=makePerson({sex:"M",age:rng.int(62,75),surname:surnameA,household:first,generation:1});
     const grandmotherA=makePerson({sex:"F",age:rng.int(60,73),surname:surnameA,household:first,generation:1});
