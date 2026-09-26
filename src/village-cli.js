@@ -1,0 +1,12 @@
+import {createVillageHistory,validateVillageHistory} from "./village-history.js";
+import {formatPersonalNotebook} from "./personal-notebook.js";
+const seed=process.argv[2]??"uyuk-1600",id=Number(process.argv[3]??1);
+const world=createVillageHistory(seed,4);
+const errors=validateVillageHistory(world);
+if(errors.length)throw new Error(errors.slice(0,10).join("; "));
+const v=world.villageHistory;
+console.log("Üyük köyü · "+v.startYear+"–"+v.endYear);
+console.log("1600 nüfusu: "+v.timeline.at(-1).population+" | Hane: "+v.timeline.at(-1).households);
+console.log("Geçmişte kaydedilen ortak olay: "+v.events.length);
+console.log("Haneler arası / hane içi ilişki bağı: "+v.relations.length);
+console.log("\n"+formatPersonalNotebook(world,id));
