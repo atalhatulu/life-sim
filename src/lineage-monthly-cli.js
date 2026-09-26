@@ -4,7 +4,7 @@ if(errors.length)throw new Error(errors.join("; "));
 const descendants=p=>{const seen=new Set(),queue=[p.id];while(queue.length){const next=queue.shift(),x=w.people.find(q=>q.id===next);for(const id of x.childIds)if(!seen.has(id)){seen.add(id);queue.push(id);}}return seen.size;};
 const founder=w.people.filter(p=>p.generation===1&&p.sex==="M").sort((a,b)=>descendants(b)-descendants(a))[0];
 const ids=new Set([founder.id]),queue=[founder.id];
-while(queue.length){const p=w.people.find(x=>x.id===queue.shift());for(const id of p.childIds)if(!ids.has(id)){ids.add(id);queue.push(id);}}
+while(queue.length){const next=queue.shift(),p=w.people.find(x=>x.id===next);for(const id of p.childIds)if(!ids.has(id)){ids.add(id);queue.push(id);}}
 const relatives=w.people.filter(p=>ids.has(p.id)||p.partnerId&&ids.has(p.partnerId));
 const date=at=>Math.floor(at/12)+"/"+String(at%12+1).padStart(2,"0");
 console.log("Üyük 1600 · seed "+w.seed+" · "+founder.surname+" kurucu soyunun yaşanmış geçmişi");
