@@ -36,7 +36,7 @@ export function generateGenealogy(seed = "uyuk-1600", familyCount = 4, year = 16
     const grandmotherA=makePerson({sex:"F",age:rng.int(60,73),surname:surnameA,household:first,generation:1});
     const grandfatherB=makePerson({sex:"M",age:rng.int(62,75),surname:surnameB,household:second,generation:1});
     const grandmotherB=makePerson({sex:"F",age:rng.int(60,73),surname:surnameB,household:second,generation:1});
-    partner(grandfatherA,grandmotherA,year-46);partner(grandfatherB,grandmotherB,year-46);
+    partner(grandfatherA,grandmotherA,year-Math.min(grandfatherA.age,grandmotherA.age)+18);partner(grandfatherB,grandmotherB,year-Math.min(grandfatherB.age,grandmotherB.age)+18);
     const childrenA=[], childrenB=[];
     for(let j=0,n=rng.int(2,3);j<n;j++) {
       const age=rng.int(29,42);
