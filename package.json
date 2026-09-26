@@ -16,6 +16,7 @@
     "census": "node src/census-cli.js",
     "generations": "node src/generations-cli.js",
     "monthly": "node src/monthly-cli.js",
-    "lineage:monthly": "node src/lineage-monthly-cli.js"
+    "lineage:monthly": "node src/lineage-monthly-cli.js",
+    "village:1600": "node src/village-1600-cli.js"
   }
 }
