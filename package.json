@@ -15,6 +15,7 @@
     "uyuk": "node src/canonical-cli.js",
     "census": "node src/census-cli.js",
     "generations": "node src/generations-cli.js",
-    "monthly": "node src/monthly-cli.js"
+    "monthly": "node src/monthly-cli.js",
+    "lineage:monthly": "node src/lineage-monthly-cli.js"
   }
 }
