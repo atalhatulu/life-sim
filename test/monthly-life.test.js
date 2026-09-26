@@ -25,3 +25,18 @@ test('births follow conception by nine months and never precede parental lifetim
   }
  }
 });
+
+test('health events preserve chronology and deceased characters do not recover later',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const w=createMonthlyVillage(seed),byId=new Map(w.people.map(p=>[p.id,p]));
+  for(const p of w.people){
+   assert.ok(p.state.health>=0&&p.state.health<=100);
+   assert.ok(p.history.every(e=>p.deathAt===null||e.at<=p.deathAt||e.personIds.includes(p.id)&&e.type==='death'));
+  }
+  for(const e of w.events.filter(e=>e.type==='illness_recovered'||e.type==='injury_recovered')){
+   const p=byId.get(e.personIds[0]);
+   assert.ok(p.bornAt<=e.at);
+   assert.ok(p.deathAt===null||e.at<=p.deathAt);
+  }
+ }
+});
