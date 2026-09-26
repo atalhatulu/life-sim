@@ -1,3 +1,4 @@
+import {childCareContext,progressChildhood} from "./monthly-childhood.js";
 import {progressHealth,mortalityHealthFactor} from "./monthly-health.js";
 import {RNG} from "./engine.js";
 import {pickName,HOUSE_NAMES} from "./names.js";
@@ -18,15 +19,15 @@ const unrelated=(a,b,byId)=>{
 export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,endYear=1600}={}){
  if(!Number.isInteger(founderFamilies)||founderFamilies<1||founderFamilies>24)throw new Error("founderFamilies must be 1..24");
  if(!Number.isInteger(startYear)||!Number.isInteger(endYear)||endYear<=startYear)throw new Error("invalid years");
- const rng=new RNG(String(seed)+":monthly-life:v6");
- const world={seed:String(seed),version:"monthly-life:v6",year:startYear,month:1,monthCount:0,
+ const rng=new RNG(String(seed)+":monthly-life:v7");
+ const world={seed:String(seed),version:"monthly-life:v7",year:startYear,month:1,monthCount:0,
   people:[],households:[],events:[],initialConditions:[],generationLimit:3};
  const byId=new Map();let personId=1,houseId=1;
  const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85),workPressure:rng.int(15,75)};world.households.push(h);return h;};
  const person=(sex,bornAt,surname,home,generation,parents=[],initial=false)=>{
   const p={id:personId++,name:pickName(rng,sex),surname,sex,bornAt,birthYear:Math.floor(bornAt/12),
    birthMonth:bornAt%12+1,generation,parentIds:parents.map(x=>x.id),childIds:[],
-   householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,pregnancy:null,lastBirthAt:null,guardianId:null,
+   householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,pregnancy:null,lastBirthAt:null,guardianId:null,childhood:{months:0,careSum:0,learningMonths:0,workMonths:0,lowCareMonths:0},
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
    skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,educationDecision:null,accidents:0,
    state:{energy:80,health:90,illness:null,injury:null,permanentImpairment:false},experienceMonths:initial?0:1,history:[]};
@@ -123,7 +124,8 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    p.state.energy=clamp(p.state.energy+rng.int(-4,5));
    for(const change of progressHealth(p,month,rng))record(change.type,at,[p.id],h.id,change);
    if(age===6*12){
-    const support=clamp(h.educationSupport-h.workPressure*0.45+(p.traits.curiosity-50)*0.3);
+    const guardian=byId.get(p.guardianId);
+    const support=childCareContext(p,guardian?.alive?guardian:null,h,at).education;
     p.educationDecision=rng.chance(support/100)?"learning":"household_work";
     record("childhood_path",at,[p.id,...p.parentIds],h.id,{path:p.educationDecision,supportProbability:support/100});
    }
