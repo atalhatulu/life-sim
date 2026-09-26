@@ -8,6 +8,7 @@
     "sim": "node src/cli.js",
     "genealogy": "node src/genealogy-cli.js",
     "lineage": "node src/lineage-cli.js",
-    "book": "node src/book-cli.js"
+    "book": "node src/book-cli.js",
+    "notebook": "node src/notebook-cli.js"
   }
 }
