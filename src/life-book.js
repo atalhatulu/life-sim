@@ -4,6 +4,7 @@ const EVENT_LABELS = {
   birth:"Doğum",marriage:"Evlilik",death:"Ölüm",widowed:"Eş kaybı",
   child_birth:"Çocuk doğumu",sibling_birth:"Kardeş doğumu",
   parent_death:"Ebeveyn kaybı",grandparent_death:"Büyükanne/büyükbaba kaybı",
+  sibling_death:"Kardeş kaybı",child_death:"Çocuk kaybı",
   household_move:"Hane değişikliği"
 };
 const fullName = p => p ? p.name+" "+p.surname : "Bilinmeyen kişi";
@@ -32,10 +33,12 @@ export function buildLifeBooks(world) {
     for(const sibling of world.people) {
       if(sibling.id===person.id || !sibling.parentIds?.some(id=>person.parentIds?.includes(id)))continue;
       if(sibling.birthYear>=person.birthYear)add(sibling.birthYear,"sibling_birth",sibling.id,{narrator:"record"});
+      if(sibling.deathYear!=null)add(sibling.deathYear,"sibling_death",sibling.id,{narrator:"record"});
     }
     for(const childId of person.childIds??[]) {
       const child=byId.get(childId);
-      if(child)add(child.birthYear,"child_birth",child.id,{narrator:"record"});
+      if(child){add(child.birthYear,"child_birth",child.id,{narrator:"record"});
+        if(child.deathYear!=null)add(child.deathYear,"child_death",child.id,{narrator:"record"});}
     }
     for(const grandparentId of new Set((person.parentIds??[]).flatMap(id=>byId.get(id)?.parentIds??[]))) {
       const grandparent=byId.get(grandparentId);
