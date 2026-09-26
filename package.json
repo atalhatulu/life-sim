@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test",
     "sim": "node src/cli.js",
-    "genealogy": "node src/genealogy-cli.js"
+    "genealogy": "node src/genealogy-cli.js",
+    "lineage": "node src/lineage-cli.js"
   }
 }
