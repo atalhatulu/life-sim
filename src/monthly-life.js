@@ -40,7 +40,10 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
  const record=(type,at,personIds,householdId,details={})=>{
   const e={type,at,year:Math.floor(at/12),month:at%12+1,personIds,householdId,...details};
   world.events.push(e);
-  for(const id of personIds)byId.get(id)?.history.push(e);
+  for(const id of personIds){
+   const p=byId.get(id);
+   if(p&&(p.alive||type==="death"&&details.deceasedId===id))p.history.push(e);
+  }
   return e;
  };
  const founders=[];
@@ -224,6 +227,7 @@ export function validateMonthlyVillage(world){
   if(p.alive&&!world.households.some(h=>h.id===p.householdId&&h.members.includes(p.id)))errors.push("household pointer "+p.id);
   if(p.generation<1||p.generation>3)errors.push("generation "+p.id);
   if(p.experienceMonths<1)errors.push("missing lived months "+p.id);
+  if(p.history.some(e=>e.at<p.bornAt||p.deathAt!==null&&e.at>p.deathAt))errors.push("personal history outside lifetime "+p.id);
   for(const id of p.parentIds){
    const parent=byId.get(id);
    if(!parent||!parent.childIds.includes(p.id)||p.bornAt-parent.bornAt<17*12||parent.generation!==p.generation-1)errors.push("parent "+p.id);
