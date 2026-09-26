@@ -1,3 +1,4 @@
+import {progressHealth,mortalityHealthFactor} from "./monthly-health.js";
 import {RNG} from "./engine.js";
 import {pickName,HOUSE_NAMES} from "./names.js";
 
@@ -17,8 +18,8 @@ const unrelated=(a,b,byId)=>{
 export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,endYear=1600}={}){
  if(!Number.isInteger(founderFamilies)||founderFamilies<1||founderFamilies>24)throw new Error("founderFamilies must be 1..24");
  if(!Number.isInteger(startYear)||!Number.isInteger(endYear)||endYear<=startYear)throw new Error("invalid years");
- const rng=new RNG(String(seed)+":monthly-life:v4");
- const world={seed:String(seed),version:"monthly-life:v4",year:startYear,month:1,monthCount:0,
+ const rng=new RNG(String(seed)+":monthly-life:v5");
+ const world={seed:String(seed),version:"monthly-life:v5",year:startYear,month:1,monthCount:0,
   people:[],households:[],events:[],initialConditions:[],generationLimit:3};
  const byId=new Map();let personId=1,houseId=1;
  const house=(label,generation,formedAt)=>{const h={id:houseId++,label,generation,formedAt,members:[],food:60,security:clamp(rng.int(35,75)),educationSupport:rng.int(15,85),workPressure:rng.int(15,75)};world.households.push(h);return h;};
@@ -28,7 +29,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    householdId:home.id,originHouseholdId:home.id,partnerId:null,previousPartnerIds:[],alive:true,deathAt:null,deathCause:null,bereavements:0,pregnancy:null,lastBirthAt:null,
    traits:{clumsiness:rng.int(10,90),attention:rng.int(10,90),curiosity:rng.int(10,90),patience:rng.int(10,90),sociability:rng.int(10,90)},
    skills:{housework:0,craft:0,animalCare:0,learning:0},hobby:null,educationDecision:null,accidents:0,
-   state:{energy:80,health:90},experienceMonths:initial?0:1,history:[]};
+   state:{energy:80,health:90,illness:null,injury:null,permanentImpairment:false},experienceMonths:initial?0:1,history:[]};
   home.members.push(p.id);world.people.push(p);byId.set(p.id,p);
   for(const parent of parents)parent.childIds.push(p.id);
   if(initial)world.initialConditions.push({type:"founder",personId:p.id,bornAt});
@@ -83,7 +84,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
   // Fictional simulation parameters, not historical mortality estimates.
   const annual=age<1?0.075:age<5?0.018:age<15?0.003:age<40?0.005:
    age<55?0.012:age<65?0.025:age<75?0.065:age<85?0.15:0.32;
-  const healthFactor=1+(100-p.state.health)/100*2.2;
+  const healthFactor=mortalityHealthFactor(p);
   const annualRisk=Math.min(0.95,annual*healthFactor);
   return 1-Math.pow(1-annualRisk,1/12);
  };
@@ -102,6 +103,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    const age=ageMonths(p,at),h=world.households.find(x=>x.id===p.householdId);
    p.experienceMonths++;
    p.state.energy=clamp(p.state.energy+rng.int(-4,5));
+   for(const change of progressHealth(p,month,rng))record(change.type,at,[p.id],h.id,change);
    if(age===6*12){
     const support=clamp(h.educationSupport-h.workPressure*0.45+(p.traits.curiosity-50)*0.3);
     p.educationDecision=rng.chance(support/100)?"learning":"household_work";
@@ -118,7 +120,10 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
     const risk=clamp(0.12+(p.traits.clumsiness-50)*0.004+(50-p.traits.attention)*0.002+(50-p.state.energy)*0.002)/100;
     if(rng.chance(risk)){
      p.accidents++;const severity=rng.chance(0.14)?"injury":"minor";
-     if(severity==="injury")p.state.health=clamp(p.state.health-rng.int(4,12));
+     if(severity==="injury"){
+      p.state.health=clamp(p.state.health-rng.int(4,12));
+      p.state.injury={severity:rng.int(2,4),months:0};
+     }
      record("work_accident",at,[p.id],h.id,{severity,probability:risk});
     }
    }
@@ -128,7 +133,7 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
    }
    const deathRisk=monthlyMortality(p,at);
    if(rng.chance(deathRisk)){
-    const cause=p.state.health<55?"poor_health":age>=65*12?"age_related":"illness_or_accident";
+    const cause=p.state.illness?"illness":p.state.injury?"injury":p.state.health<55?"poor_health":age>=65*12?"age_related":"other";
     die(p,at,cause,deathRisk);
    }
   }
