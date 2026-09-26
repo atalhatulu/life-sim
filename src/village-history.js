@@ -80,6 +80,23 @@ export function createVillageHistory(seed="uyuk-1600",familyCount=4,year=1600){
    events.push(event);yearly.events.push(event);
    for(const p of [a,b])p.history.push({year:y,type:"household_cooperation",personId:p.id===a.id?b.id:a.id});
   }
+  // Inter-household exchanges make neighbours share a concrete history.
+  const occupied=[...homes.keys()].sort((a,b)=>a-b);
+  if(occupied.length>=2&&rng.chance(0.55)){
+   const donorId=rng.pick(occupied),receiverId=rng.pick(occupied.filter(id=>id!==donorId));
+   const donor=households.get(donorId),receiver=households.get(receiverId);
+   if(donor.food>=8&&receiver.food<=donor.food){
+    const amount=Math.min(3,donor.food-5);
+    donor.food-=amount;receiver.food+=amount;
+    const a=rng.pick(homes.get(donorId)),b=rng.pick(homes.get(receiverId));
+    link(a.id,b,4,"komşu haneye erzak yardımı",y);
+    const event={year:y,type:"neighbour_aid",personIds:[a.id,b.id],
+      fromHouseholdId:donorId,toHouseholdId:receiverId,food:amount};
+    events.push(event);yearly.events.push(event);
+    for(const [p,other] of [[a,b],[b,a]])
+      p.history.push({year:y,type:"neighbour_aid",personId:other.id,food:amount});
+   }
+  }
   timeline.push(yearly);
  }
  world.villageHistory={startYear:firstYear,endYear:year,events,timeline,
