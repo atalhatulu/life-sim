@@ -42,6 +42,8 @@ export function createLivingLineage(seed = "uyuk-1600", familyCount = 4, year = 
     world.households.push(household);
     move(man, household);
     move(woman, household);
+    man.history.push({year:marriageYear,type:"household_move",householdId:household.id});
+    woman.history.push({year:marriageYear,type:"household_move",householdId:household.id});
     const children = [];
     const maximumAge = Math.min(12, year-marriageYear, man.age-17, woman.age-17);
     const childCount = maximumAge >= 0 ? rng.int(0,2) : 0;
