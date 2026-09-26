@@ -14,3 +14,4 @@ jobs:
       - run: npm run genealogy -- uyuk-1600 4
       - run: npm run book -- uyuk-1600 1
       - run: npm run notebook -- uyuk-1600 1
+      - run: npm run village -- uyuk-1600 1
