@@ -1,0 +1,38 @@
+name: Character story audit
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Number of generated villages (1–10000)"
+        required: false
+        default: "300"
+      seed_prefix:
+        description: "Reproducible seed prefix"
+        required: false
+        default: "story-audit"
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test all story audit invariants
+        run: npm test
+      - name: Audit character histories
+        env:
+          SEEDS: ${{ github.event.inputs.seeds || '300' }}
+          PREFIX: ${{ github.event.inputs.seed_prefix || 'story-audit' }}
+        run: npm run audit:stories -- "$SEEDS" "$PREFIX"
+      - name: Upload report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-audit-report
+          path: artifacts/story-audit/
+          if-no-files-found: warn
