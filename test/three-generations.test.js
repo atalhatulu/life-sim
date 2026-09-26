@@ -9,6 +9,8 @@ test("seed 1 is stable and stops after grandchildren",()=>{
  assert.equal(a.generationLimit,3);
  assert.ok(a.generationCounts.every(n=>n>0));
  assert.ok(a.people.every(p=>p.generation<=3));
+ assert.equal(a.generationCounts[0],16);
+ assert.ok(a.people.filter(p=>p.generation===3).every(p=>p.childIds.length===0));
 });
 test("500 seeds have chronological parents and no fourth generation",()=>{
  for(let i=1;i<=500;i++){
