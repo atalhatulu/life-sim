@@ -40,3 +40,22 @@ test('health events preserve chronology and deceased characters do not recover l
   }
  }
 });
+
+test('children retain living guardians and delivery complications have valid participants',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const w=createMonthlyVillage(seed),byId=new Map(w.people.map(p=>[p.id,p]));
+  assert.deepEqual(validateMonthlyVillage(w),[],'seed '+seed);
+  for(const p of w.people.filter(p=>p.alive&&p.generation>1&&w.year*12+w.month-1-p.bornAt<16*12)){
+   if(p.guardianId){
+    const guardian=byId.get(p.guardianId);
+    assert.ok(guardian.alive);
+    assert.equal(guardian.householdId,p.householdId);
+   }
+  }
+  for(const e of w.events.filter(e=>e.type==='delivery_complication')){
+   assert.ok(e.damage>=7&&e.damage<=18);
+   assert.ok(byId.get(e.personIds[0]).sex==='F');
+   assert.equal(byId.get(e.personIds[1]).bornAt,e.at);
+  }
+ }
+});
