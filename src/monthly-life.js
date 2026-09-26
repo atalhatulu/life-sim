@@ -132,6 +132,24 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
     die(p,at,cause,deathRisk);
    }
   }
+  // Resolve gestation before new conceptions; deceased fathers remain genealogical parents.
+  for(const mother of world.people){
+   const pregnancy=mother.pregnancy;
+   if(!mother.alive||!pregnancy)continue;
+   const father=byId.get(pregnancy.fatherId),elapsed=at-pregnancy.conceivedAt;
+   if(elapsed<9){
+    const lossChance=elapsed<3?0.012:0.003;
+    if(rng.chance(lossChance)){
+     record("pregnancy_loss",at,[mother.id,father.id],mother.householdId,{conceivedAt:pregnancy.conceivedAt,reason:"spontaneous",probability:lossChance});
+     mother.pregnancy=null;
+    }
+    continue;
+   }
+   const home=world.households.find(h=>h.id===mother.householdId);
+   const child=person(rng.chance(0.5)?"F":"M",at,father.surname,home,mother.generation+1,[father,mother]);
+   mother.lastBirthAt=at;mother.pregnancy=null;
+   record("delivery",at,[mother.id,father.id,child.id],home.id,{childId:child.id,conceivedAt:pregnancy.conceivedAt});
+  }
   // Monthly marriage checks; no child is born from a third-generation couple in the initial history.
   for(const generation of [2,3]){
    const eligible=world.people.filter(p=>p.generation===generation&&!p.partnerId&&p.alive&&ageMonths(p,at)>=18*12&&ageMonths(p,at)<=35*12);
@@ -142,19 +160,17 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
     if(choices.length)marry(a,rng.pick(choices),at);
    }
   }
-  for(const a of world.people){
-   if(!a.alive||a.sex!=="M"||!a.partnerId||a.generation>=3)continue;
-   const b=byId.get(a.partnerId);
-   if(!b?.alive||b.householdId!==a.householdId)continue;
-   const maleAge=ageMonths(a,at),femaleAge=ageMonths(b,at);
-   if(maleAge<18*12||maleAge>55*12||femaleAge<18*12||femaleAge>39*12)continue;
-   if(at-(birthCooldown.get(a.id)??-Infinity)<24)continue;
-   if(rng.chance(0.014)){
-    const home=world.households.find(h=>h.id===a.householdId);
-    const child=person(rng.chance(0.5)?"F":"M",at,a.surname,home,a.generation+1,[a,b]);
-    birthCooldown.set(a.id,at);
-    // A birth is a shared event for both parents and the newborn.
-    if(child.generation>3)throw new Error("fourth generation in initial history");
+  for(const mother of world.people){
+   if(!mother.alive||mother.sex!=="F"||mother.pregnancy||mother.generation>=3||!mother.partnerId)continue;
+   const father=byId.get(mother.partnerId);
+   if(!father?.alive||father.householdId!==mother.householdId)continue;
+   const femaleAge=ageMonths(mother,at),maleAge=ageMonths(father,at);
+   if(femaleAge<18*12||femaleAge>39*12||maleAge<18*12||maleAge>55*12)continue;
+   if(mother.lastBirthAt!==null&&at-mother.lastBirthAt<15)continue;
+   const chance=conceptionChance(mother,at);
+   if(rng.chance(chance)){
+    mother.pregnancy={conceivedAt:at,fatherId:father.id,dueAt:at+9};
+    record("conception",at,[mother.id,father.id],mother.householdId,{dueAt:at+9,probability:chance});
    }
   }
  }
