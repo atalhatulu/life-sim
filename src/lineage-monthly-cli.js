@@ -1,12 +1,13 @@
 import {createMonthlyVillage,validateMonthlyVillage} from "./monthly-life.js";
 const w=createMonthlyVillage(process.argv[2]??1),errors=validateMonthlyVillage(w);
 if(errors.length)throw new Error(errors.join("; "));
-const founder=w.people.find(p=>p.generation===1&&p.sex==="M");
+const descendants=p=>{const seen=new Set(),queue=[p.id];while(queue.length){const x=w.people.find(q=>q.id===queue.shift());for(const id of x.childIds)if(!seen.has(id)){seen.add(id);queue.push(id);}}return seen.size;};
+const founder=w.people.filter(p=>p.generation===1&&p.sex==="M").sort((a,b)=>descendants(b)-descendants(a))[0];
 const ids=new Set([founder.id]),queue=[founder.id];
 while(queue.length){const p=w.people.find(x=>x.id===queue.shift());for(const id of p.childIds)if(!ids.has(id)){ids.add(id);queue.push(id);}}
 const relatives=w.people.filter(p=>ids.has(p.id)||p.partnerId&&ids.has(p.partnerId));
 const date=at=>Math.floor(at/12)+"/"+String(at%12+1).padStart(2,"0");
-console.log("Üyük 1600 · seed "+w.seed+" · Demirci kurucu soyunun yaşanmış geçmişi");
+console.log("Üyük 1600 · seed "+w.seed+" · "+founder.surname+" kurucu soyunun yaşanmış geçmişi");
 console.log("Köy: "+w.people.length+" kişi, "+w.households.filter(h=>h.members.length).length+" dolu hane, "+w.monthCount+" ay, "+w.events.length+" kayıtlı olay");
 for(const p of relatives){
  const age=Math.floor((w.year*12+w.month-1-p.bornAt)/12);
