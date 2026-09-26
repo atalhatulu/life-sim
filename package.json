@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "sim": "node src/cli.js"
+    "sim": "node src/cli.js",
+    "genealogy": "node src/genealogy-cli.js"
   }
 }
