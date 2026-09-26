@@ -130,9 +130,14 @@ export function createMonthlyVillage(seed=1,{founderFamilies=8,startYear=1530,en
     record("childhood_path",at,[p.id,...p.parentIds],h.id,{path:p.educationDecision,supportProbability:support/100});
    }
    if(age>=6*12&&age<16*12){
-    const workChance=p.educationDecision==="household_work"?0.78:0.26;
-    if(rng.chance(workChance))p.skills.housework=clamp(p.skills.housework+0.25);
-    else p.skills.learning=clamp(p.skills.learning+0.25);
+    const guardian=byId.get(p.guardianId);
+    const context=childCareContext(p,guardian?.alive?guardian:null,h,at);
+    const result=progressChildhood(p,context,rng);
+    if(p.childhood.months%12===0)record("childhood_year",at,[p.id,...(context.guardianId?[context.guardianId]:[])],h.id,{
+     care:Math.round(p.childhood.careSum/p.childhood.months),learningMonths:p.childhood.learningMonths,
+     workMonths:p.childhood.workMonths,lowCareMonths:p.childhood.lowCareMonths,
+     guardianId:context.guardianId,learningChance:result.learningChance,workingChance:result.workingChance
+    });
    }else if(age>=16*12){
     const key=p.surname==="Çoban"?"animalCare":p.surname==="Demirci"?"craft":"housework";
     p.skills[key]=clamp(p.skills[key]+0.14);
@@ -225,6 +230,7 @@ export function validateMonthlyVillage(world){
   if(p.partnerId&&(!p.alive||!byId.get(p.partnerId)?.alive||byId.get(p.partnerId)?.partnerId!==p.id))errors.push("partner "+p.id);
   if((p.alive&&p.deathAt!==null)||(!p.alive&&p.deathAt===null))errors.push("death state "+p.id);
   if(p.generation===3&&p.childIds.length)errors.push("fourth generation "+p.id);
+  if(p.childhood.learningMonths>p.childhood.months||p.childhood.workMonths>p.childhood.months||p.childhood.lowCareMonths>p.childhood.months)errors.push("childhood counters "+p.id);
   if(p.pregnancy&&(!p.alive||p.sex!=="F"||p.generation>=3||p.pregnancy.dueAt!==p.pregnancy.conceivedAt+9))errors.push("pregnancy state "+p.id);
   if(p.alive&&p.generation>1&&ageMonths(p,monthIndex(world.year,world.month))<16*12){
    const guardian=byId.get(p.guardianId);
