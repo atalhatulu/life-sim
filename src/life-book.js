@@ -5,7 +5,8 @@ const EVENT_LABELS = {
   child_birth:"Çocuk doğumu",sibling_birth:"Kardeş doğumu",
   parent_death:"Ebeveyn kaybı",grandparent_death:"Büyükanne/büyükbaba kaybı",
   sibling_death:"Kardeş kaybı",child_death:"Çocuk kaybı",
-  household_move:"Hane değişikliği"
+  household_move:"Hane değişikliği",apprenticeship:"Meslek öğrenimi",
+  food_shortage:"Hane erzak sıkıntısı",household_cooperation:"Hane dayanışması",neighbour_aid:"Komşuya yardım"
 };
 const fullName = p => p ? p.name+" "+p.surname : "Bilinmeyen kişi";
 export function buildLifeBooks(world) {
@@ -23,7 +24,7 @@ export function buildLifeBooks(world) {
     add(person.birthYear,"birth",person.id,{narrator:"record"});
     for(const event of person.history??[]) {
       if(event.type==="birth")continue;
-      add(event.year,event.type,event.personId??person.id,{narrator:"record"});
+      add(event.year,event.type,event.personId??person.id,{...event,narrator:"record"});
     }
     for(const parentId of person.parentIds??[]) {
       const parent=byId.get(parentId);
